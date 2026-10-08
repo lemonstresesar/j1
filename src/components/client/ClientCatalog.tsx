@@ -10,6 +10,7 @@ import { translations } from '../../i18n/translations';
 interface ClientCatalogProps {
   products: Product[];
   packs: Pack[];
+  isLoading?: boolean;
   onSelectProduct: (product: Product) => void;
   onSelectPack: (pack: Pack) => void;
   onNavigate?: (path: string) => void;
@@ -18,6 +19,7 @@ interface ClientCatalogProps {
 export const ClientCatalog: React.FC<ClientCatalogProps> = ({
   products,
   packs,
+  isLoading = false,
   onSelectProduct,
   onSelectPack,
   onNavigate,
@@ -356,7 +358,38 @@ export const ClientCatalog: React.FC<ClientCatalogProps> = ({
           </span>
         </div>
 
-        {totalResultsCount === 0 ? (
+        {isLoading && totalResultsCount === 0 ? (
+          /* Shimmering Skeleton Loading Grid - replaces the 'aucun produit' flash during loading */
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-[#1E63B5] animate-pulse">
+              <span className="w-2 h-2 rounded-full bg-[#1E63B5] animate-ping" />
+              <span>Chargement de la collection exclusive...</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xs flex flex-col justify-between animate-pulse"
+                >
+                  <div>
+                    <div className="aspect-[3/4] w-full bg-slate-200/80 relative">
+                      <div className="absolute top-3 left-3 w-16 h-5 bg-slate-300/80 rounded-full" />
+                    </div>
+                    <div className="p-4 sm:p-5 space-y-2.5">
+                      <div className="w-14 h-3 bg-slate-200 rounded-md" />
+                      <div className="w-4/5 h-4 bg-slate-200 rounded-md" />
+                      <div className="w-1/2 h-3 bg-slate-100 rounded-md" />
+                    </div>
+                  </div>
+                  <div className="p-4 sm:p-5 pt-0 flex items-center justify-between border-t border-slate-50 mt-2">
+                    <div className="w-20 h-5 bg-slate-200 rounded-md" />
+                    <div className="w-8 h-8 rounded-xl bg-slate-200" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : totalResultsCount === 0 ? (
           <div className="bg-slate-50/70 rounded-3xl p-16 text-center border border-slate-200/60 space-y-4 max-w-lg mx-auto">
             <h3 className="text-lg font-serif font-bold text-[#0B2A4A]">{t.emptyTitle}</h3>
             <p className="text-xs text-slate-500 leading-relaxed">{t.emptyMessage}</p>

@@ -43,9 +43,37 @@ function StoreApp() {
     return path;
   });
 
-  // Real-time Firestore state
-  const [products, setProducts] = useState<Product[]>([]);
-  const [packs, setPacks] = useState<Pack[]>([]);
+  // Real-time Firestore state with instant local cache (0ms instant display)
+  const [products, setProducts] = useState<Product[]>(() => {
+    try {
+      const cached = localStorage.getItem('fhh_cached_products');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  const [packs, setPacks] = useState<Pack[]>(() => {
+    try {
+      const cached = localStorage.getItem('fhh_cached_packs');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState<boolean>(() => {
+    try {
+      const cached = localStorage.getItem('fhh_cached_products');
+      if (cached && JSON.parse(cached)?.length > 0) return false;
+    } catch {}
+    return true;
+  });
+
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [settings, setSettings] = useState<ShopSettings>(INITIAL_SETTINGS);
 
@@ -78,9 +106,16 @@ function StoreApp() {
   useEffect(() => {
     const unsubProd = subscribeToProducts((items) => {
       setProducts(items);
+      setIsLoadingCatalog(false);
+      try {
+        localStorage.setItem('fhh_cached_products', JSON.stringify(items));
+      } catch {}
     });
     const unsubPacks = subscribeToPacks((items) => {
       setPacks(items);
+      try {
+        localStorage.setItem('fhh_cached_packs', JSON.stringify(items));
+      } catch {}
     });
     const unsubZones = subscribeToDeliveryZones((items) => {
       setDeliveryZones(items);
@@ -204,6 +239,7 @@ function StoreApp() {
           <ClientCatalog
             products={products}
             packs={packs}
+            isLoading={isLoadingCatalog}
             onSelectProduct={handleSelectProduct}
             onSelectPack={handleSelectPack}
             onNavigate={navigate}
