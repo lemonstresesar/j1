@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #0B2A4A;
+  --color-navy-dark: #071C32;
+  --color-blue-brand: #1E63B5;
+  --color-blue-light: #EAF2FB;
+  --color-blue-muted: #D3E4F7;
+  --font-serif: "Playfair Display", Cambria, Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", Calibri, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: #1a202c;
+  background-color: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, .font-heading {
+  font-family: var(--font-serif);
+}
+
+/* Custom smooth transitions */
+button, input, select, textarea {
+  transition: all 0.15s ease-in-out;
+}

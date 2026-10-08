@@ -1,0 +1,6 @@
+{
+  "name": "For him and her - Boutique de Mode Douala",
+  "description": "Boutique en ligne complète pour vêtements, chaussures, parfums, sacs et accessoires pour hommes et femmes à Douala, Cameroun. Commande directe par WhatsApp.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

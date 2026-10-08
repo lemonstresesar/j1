@@ -1,0 +1,300 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A fashion product available in the boutique",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Product display name",
+          "maxLength": 150
+        },
+        "category": {
+          "type": "string",
+          "description": "Product category",
+          "enum": ["vetements", "chaussures", "parfums", "sacs", "accessoires"]
+        },
+        "gender": {
+          "type": "string",
+          "description": "Target gender",
+          "enum": ["homme", "femme", "unisexe"]
+        },
+        "description": {
+          "type": "string",
+          "description": "Product detailed description",
+          "maxLength": 2000
+        },
+        "price": {
+          "type": "number",
+          "description": "Base price in FCFA"
+        },
+        "discountPrice": {
+          "type": "number",
+          "description": "Discounted price in FCFA if promotional"
+        },
+        "photos": {
+          "type": "array",
+          "description": "Up to 3 photo URLs or compressed images"
+        },
+        "isHidden": {
+          "type": "boolean",
+          "description": "Whether the product is hidden from customer storefront"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["name", "category", "gender", "price", "photos", "isHidden"]
+    },
+    "Pack": {
+      "title": "Pack",
+      "description": "A bundled pack of products with bundle pricing",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Pack display name",
+          "maxLength": 150
+        },
+        "description": {
+          "type": "string",
+          "description": "Pack description and contents details",
+          "maxLength": 2000
+        },
+        "price": {
+          "type": "number",
+          "description": "Overall pack bundle price in FCFA"
+        },
+        "discountPrice": {
+          "type": "number",
+          "description": "Discounted bundle price in FCFA if on promo"
+        },
+        "photo": {
+          "type": "string",
+          "description": "Pack cover photo"
+        },
+        "items": {
+          "type": "array",
+          "description": "List of items included in this pack"
+        },
+        "isGombo": {
+          "type": "boolean",
+          "description": "Flag for deal of the week (Gombo de la semaine)"
+        },
+        "gomboEndDate": {
+          "type": "string",
+          "description": "Expiration date for the weekly gombo"
+        },
+        "isHidden": {
+          "type": "boolean",
+          "description": "Whether the pack is hidden from customer storefront"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["name", "price", "photo", "items", "isGombo", "isHidden"]
+    },
+    "DeliveryZone": {
+      "title": "DeliveryZone",
+      "description": "Predefined delivery locations in Douala and respective fees",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Delivery zone name (neighborhood)",
+          "maxLength": 100
+        },
+        "price": {
+          "type": "number",
+          "description": "Delivery price in FCFA"
+        },
+        "order": {
+          "type": "number",
+          "description": "Display order index"
+        }
+      },
+      "required": ["name", "price"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Customer order registered upon checkout before redirecting to WhatsApp",
+      "type": "object",
+      "properties": {
+        "clientLastName": {
+          "type": "string",
+          "description": "Customer last name",
+          "maxLength": 100
+        },
+        "clientFirstName": {
+          "type": "string",
+          "description": "Customer first name",
+          "maxLength": 100
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "Customer WhatsApp phone number",
+          "maxLength": 30
+        },
+        "callNumber": {
+          "type": "string",
+          "description": "Customer regular voice call phone number",
+          "maxLength": 30
+        },
+        "cityAndNeighborhood": {
+          "type": "string",
+          "description": "City and neighborhood",
+          "maxLength": 200
+        },
+        "deliveryLocation": {
+          "type": "string",
+          "description": "Chosen delivery location or custom address",
+          "maxLength": 200
+        },
+        "deliveryPrice": {
+          "type": "string",
+          "description": "Delivery fee amount or confirmation note",
+          "maxLength": 50
+        },
+        "items": {
+          "type": "array",
+          "description": "List of ordered items with quantities and unit prices"
+        },
+        "itemsTotal": {
+          "type": "number",
+          "description": "Subtotal for products in FCFA"
+        },
+        "total": {
+          "type": "number",
+          "description": "Grand total in FCFA (or product subtotal if delivery is pending confirmation)"
+        },
+        "isDeliveryPending": {
+          "type": "boolean",
+          "description": "True if delivery price is to be confirmed on WhatsApp"
+        },
+        "language": {
+          "type": "string",
+          "description": "Customer selected language (fr or en)",
+          "enum": ["fr", "en"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Order status",
+          "enum": ["enregistrée", "annulée"]
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp when order was placed"
+        }
+      },
+      "required": [
+        "clientLastName",
+        "clientFirstName",
+        "whatsappNumber",
+        "callNumber",
+        "cityAndNeighborhood",
+        "deliveryLocation",
+        "deliveryPrice",
+        "items",
+        "itemsTotal",
+        "total",
+        "language",
+        "status",
+        "createdAt"
+      ]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Store configuration parameters",
+      "type": "object",
+      "properties": {
+        "shopName": {
+          "type": "string",
+          "description": "Shop commercial name",
+          "maxLength": 100
+        },
+        "whatsappNumber": {
+          "type": "string",
+          "description": "WhatsApp number for receiving customer orders",
+          "maxLength": 30
+        },
+        "paymentInstructions": {
+          "type": "string",
+          "description": "Instructions for mobile money deposit (Orange Money / MTN MoMo)",
+          "maxLength": 1000
+        },
+        "adminCreated": {
+          "type": "boolean",
+          "description": "Flag indicating that the single vendor account was initialized"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "ISO timestamp of last update"
+        }
+      },
+      "required": ["shopName", "whatsappNumber"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized vendor administrator account record",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "username": {
+          "type": "string",
+          "description": "Vendor identifier",
+          "maxLength": 50
+        },
+        "email": {
+          "type": "string",
+          "description": "Internal email address"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO timestamp of creation"
+        }
+      },
+      "required": ["uid", "username", "email", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Fashion products catalog"
+    },
+    "/packs/{packId}": {
+      "schema": "Pack",
+      "description": "Bundled product packs"
+    },
+    "/deliveryZones/{deliveryZoneId}": {
+      "schema": "DeliveryZone",
+      "description": "Available delivery neighborhoods and prices"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Orders submitted by customers and tracked by vendor"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "General store settings"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Designated administrator profile and authorization check"
+    }
+  }
+}

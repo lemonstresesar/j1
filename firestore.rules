@@ -1,0 +1,106 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    // Products collection: public read, validated write
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && data.category is string && (data.category in ['vetements', 'chaussures', 'parfums', 'sacs', 'accessoires'])
+        && data.gender is string && (data.gender in ['homme', 'femme', 'unisexe'])
+        && data.price is number && data.price >= 0
+        && data.photos is list && data.photos.size() <= 10
+        && data.isHidden is bool;
+    }
+
+    match /products/{productId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(productId) && isValidProduct(incoming());
+      allow delete: if isValidId(productId);
+    }
+
+    // Packs collection: public read, validated write
+    function isValidPack(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 150
+        && data.price is number && data.price >= 0
+        && data.photo is string && data.photo.size() > 0
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 20
+        && data.isGombo is bool
+        && data.isHidden is bool;
+    }
+
+    match /packs/{packId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(packId) && isValidPack(incoming());
+      allow delete: if isValidId(packId);
+    }
+
+    // Delivery Zones: public read, validated write
+    function isValidDeliveryZone(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.price is number && data.price >= 0;
+    }
+
+    match /deliveryZones/{zoneId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(zoneId) && isValidDeliveryZone(incoming());
+      allow delete: if isValidId(zoneId);
+    }
+
+    // Orders collection:
+    // Anyone can create an order with valid data
+    // Admin space can read, list, update status, delete
+    function isValidOrder(data) {
+      return data.clientLastName is string && data.clientLastName.size() > 0 && data.clientLastName.size() <= 100
+        && data.clientFirstName is string && data.clientFirstName.size() > 0 && data.clientFirstName.size() <= 100
+        && data.whatsappNumber is string && data.whatsappNumber.size() >= 6 && data.whatsappNumber.size() <= 30
+        && data.callNumber is string && data.callNumber.size() >= 6 && data.callNumber.size() <= 30
+        && data.cityAndNeighborhood is string && data.cityAndNeighborhood.size() > 0 && data.cityAndNeighborhood.size() <= 200
+        && data.deliveryLocation is string && data.deliveryLocation.size() > 0 && data.deliveryLocation.size() <= 200
+        && data.deliveryPrice is string && data.deliveryPrice.size() <= 50
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 50
+        && data.itemsTotal is number && data.itemsTotal >= 0
+        && data.total is number && data.total >= 0
+        && data.language is string && (data.language in ['fr', 'en'])
+        && data.status is string && (data.status == 'enregistrée')
+        && data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    function isValidOrderUpdate(data) {
+      return data.status is string && (data.status in ['enregistrée', 'acceptée', 'en_livraison', 'livrée', 'annulée']);
+    }
+
+    match /orders/{orderId} {
+      allow get, list: if true;
+      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow update: if isValidId(orderId) && isValidOrderUpdate(incoming());
+      allow delete: if isValidId(orderId);
+    }
+
+    // Store settings: public read & write
+    match /settings/{settingId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(settingId);
+    }
+
+    // Admin accounts collection
+    match /admins/{adminId} {
+      allow get, list: if true;
+      allow create, update, delete: if isValidId(adminId);
+    }
+  }
+}
