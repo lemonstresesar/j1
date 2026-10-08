@@ -100,27 +100,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onSelect }) =
             )}
           </div>
 
-          {/* Quick add button */}
+          {/* Add to cart / Configure options button */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              addItem({
-                id: product.id,
-                type: 'product',
-                name: product.name,
-                price: currentPrice,
-                originalPrice,
-                photo: coverPhoto,
-                category: product.category,
-                gender: product.gender,
-              });
+              onSelect(product);
             }}
-            className="p-2 sm:px-3 sm:py-2 rounded-xl bg-slate-100 hover:bg-[#0B2A4A] text-slate-700 hover:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-90 cursor-pointer shrink-0 border border-slate-200/50 hover:border-[#0B2A4A]"
-            aria-label={t.addToCart}
+            className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-[#0B2A4A] hover:bg-[#1E63B5] text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer shrink-0 shadow-xs shadow-[#0B2A4A]/20"
+            aria-label="Ajouter au panier et choisir les options"
           >
             <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            <span className="hidden md:inline">{t.addToCart}</span>
+            <span className="inline sm:hidden">Ajouter</span>
+            <span className="hidden sm:inline">Ajouter au panier</span>
           </button>
         </div>
       </div>

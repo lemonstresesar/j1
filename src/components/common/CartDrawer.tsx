@@ -75,72 +75,89 @@ export const CartDrawer: React.FC = () => {
                 </button>
               </div>
             ) : (
-              items.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex gap-3.5 p-3 rounded-2xl border border-slate-100 bg-white hover:border-[#D3E4F7] transition-all shadow-xs"
-                >
-                  {/* Photo */}
-                  <img
-                    src={item.photo}
-                    alt={item.name}
-                    className="w-20 h-20 sm:w-22 sm:h-22 object-cover rounded-xl bg-slate-100 shrink-0"
-                  />
+              items.map((item) => {
+                const itemId = item.cartItemId || item.id;
+                return (
+                  <div
+                    key={itemId}
+                    className="flex gap-3.5 p-3 rounded-2xl border border-slate-100 bg-white hover:border-[#D3E4F7] transition-all shadow-xs"
+                  >
+                    {/* Photo */}
+                    <img
+                      src={item.photo}
+                      alt={item.name}
+                      className="w-20 h-20 sm:w-22 sm:h-22 object-cover rounded-xl bg-slate-100 shrink-0"
+                    />
 
-                  {/* Details */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs sm:text-sm font-semibold text-slate-900 line-clamp-2">
-                          {item.name}
-                        </h4>
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="text-slate-300 hover:text-red-500 transition-colors p-1"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                    {/* Details */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <h4 className="text-xs sm:text-sm font-semibold text-slate-900 line-clamp-2">
+                            {item.name}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(itemId)}
+                            className="text-slate-300 hover:text-red-500 transition-colors p-1 cursor-pointer"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Variants & Tags */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {item.type === 'pack' && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#EAF2FB] text-[#1E63B5]">
+                              Pack
+                            </span>
+                          )}
+                          {item.selectedColor && (
+                            <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
+                              Couleur : {item.selectedColor}
+                            </span>
+                          )}
+                          {item.selectedSize && (
+                            <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/60">
+                              Taille : {item.selectedSize}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      {item.type === 'pack' && (
-                        <span className="inline-block mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-[#EAF2FB] text-[#1E63B5]">
-                          Pack
-                        </span>
-                      )}
-                    </div>
 
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="text-xs sm:text-sm font-bold text-[#0B2A4A]">
-                        {formatFCFA(item.price * item.quantity)}
-                      </div>
+                      <div className="flex items-center justify-between mt-2 pt-1 border-t border-slate-50">
+                        <div className="text-xs sm:text-sm font-bold text-[#0B2A4A] font-serif">
+                          {formatFCFA(item.price * item.quantity)}
+                        </div>
 
-                      {/* Quantity counter */}
-                      <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.id, -1)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-l-md transition-colors"
-                          aria-label="Diminuer"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <span className="w-7 text-center text-xs font-semibold text-slate-800">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item.id, 1)}
-                          className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-r-md transition-colors"
-                          aria-label="Augmenter"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+                        {/* Quantity counter */}
+                        <div className="flex items-center border border-slate-200 rounded-lg bg-slate-50">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(itemId, -1)}
+                            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-l-md transition-colors cursor-pointer"
+                            aria-label="Diminuer"
+                          >
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="w-7 text-center text-xs font-semibold text-slate-800">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(itemId, 1)}
+                            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-r-md transition-colors cursor-pointer"
+                            aria-label="Augmenter"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

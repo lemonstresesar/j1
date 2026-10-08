@@ -48,6 +48,7 @@ export interface DeliveryZone {
 
 export interface CartItem {
   id: string;
+  cartItemId?: string;
   type: 'product' | 'pack';
   name: string;
   price: number;
@@ -56,6 +57,8 @@ export interface CartItem {
   quantity: number;
   category?: string;
   gender?: string;
+  selectedColor?: string;
+  selectedSize?: string;
 }
 
 export interface OrderItem {
@@ -64,6 +67,8 @@ export interface OrderItem {
   unitPrice: number;
   quantity: number;
   isPack: boolean;
+  selectedColor?: string;
+  selectedSize?: string;
 }
 
 export type OrderStatus = 'enregistrée' | 'acceptée' | 'en_livraison' | 'livrée' | 'annulée';

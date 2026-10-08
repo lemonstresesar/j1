@@ -108,16 +108,7 @@ export const HeroGombo: React.FC<HeroGomboProps> = ({ packs, onSelectPack }) => 
             <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-4 pt-1 sm:pt-2">
               <button
                 type="button"
-                onClick={() =>
-                  addItem({
-                    id: featured.id,
-                    type: 'pack',
-                    name: featured.name,
-                    price: currentPrice,
-                    originalPrice,
-                    photo: featured.photo,
-                  })
-                }
+                onClick={() => onSelectPack(featured)}
                 className="py-3 px-3 sm:py-4 sm:px-8 rounded-xl sm:rounded-2xl bg-[#1E63B5] hover:bg-[#18539c] text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xl shadow-[#1E63B5]/30 transition-all duration-300 active:scale-95 cursor-pointer"
               >
                 <ShoppingBag className="w-4 h-4 shrink-0" />

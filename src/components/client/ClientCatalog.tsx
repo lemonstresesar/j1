@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, SlidersHorizontal, ArrowUpDown, X, Tag, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, ArrowUpDown, X, Tag, Sparkles, ShoppingBag } from 'lucide-react';
 import { Product, Pack, ProductCategory, ProductGender } from '../../types';
 import { ProductCard } from './ProductCard';
 import { HeroGombo } from './HeroGombo';
@@ -494,18 +494,12 @@ export const ClientCatalog: React.FC<ClientCatalogProps> = ({
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              addItem({
-                                id: pack.id,
-                                type: 'pack',
-                                name: pack.name,
-                                price: currentPrice,
-                                originalPrice,
-                                photo: pack.photo,
-                              });
+                              onSelectPack(pack);
                             }}
-                            className="mt-3 px-4 py-2.5 rounded-xl bg-[#0B2A4A] text-white hover:bg-[#1E63B5] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer"
+                            className="mt-3 px-4 py-2.5 rounded-xl bg-[#0B2A4A] text-white hover:bg-[#1E63B5] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer flex items-center gap-1.5"
                           >
-                            {t.addToCart}
+                            <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+                            <span>{t.addToCart}</span>
                           </button>
                         </div>
                       </article>

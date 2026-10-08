@@ -11,7 +11,7 @@ interface PackModalProps {
 }
 
 export const PackModal: React.FC<PackModalProps> = ({ pack, onClose }) => {
-  const { addItem, showToast, language } = useCart();
+  const { addItem, showToast, setIsCartOpen, language } = useCart();
   const t = translations[language];
 
   const [quantity, setQuantity] = useState(1);
@@ -56,6 +56,7 @@ export const PackModal: React.FC<PackModalProps> = ({ pack, onClose }) => {
       quantity
     );
     onClose();
+    setIsCartOpen(true);
   };
 
   return (
@@ -167,40 +168,67 @@ export const PackModal: React.FC<PackModalProps> = ({ pack, onClose }) => {
 
           {/* Action footer */}
           <div className="mt-8 pt-4 border-t border-slate-100 space-y-3">
-            <div className="flex items-center gap-3">
-              {/* Quantity */}
-              <div className="flex items-center border border-slate-200 rounded-xl bg-slate-50 p-1">
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="p-2 text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
-                  aria-label="Moins"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="w-8 text-center text-sm font-bold text-slate-900">
-                  {quantity}
+            {/* Quantity selection heading and quick chips */}
+            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-800">Quantité de packs :</span>
+                <span className="font-semibold text-[#0B2A4A]">
+                  Sous-total : {formatFCFA(currentPrice * quantity)}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="p-2 text-slate-600 hover:text-slate-900 rounded-lg transition-colors"
-                  aria-label="Plus"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
               </div>
+              <div className="flex items-center justify-between gap-3">
+                {/* Stepper */}
+                <div className="flex items-center border border-slate-200 rounded-xl bg-white p-1 shadow-xs">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg transition-colors cursor-pointer"
+                    aria-label="Moins"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <span className="w-8 text-center text-sm font-extrabold text-[#0B2A4A]">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => q + 1)}
+                    className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg transition-colors cursor-pointer"
+                    aria-label="Plus"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
 
-              {/* Add pack */}
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="flex-1 py-3.5 px-6 rounded-xl bg-[#0B2A4A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#1E63B5] transition-all shadow-md active:scale-95"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                <span>{t.addToCart} • {formatFCFA(currentPrice * quantity)}</span>
-              </button>
+                {/* Quick quantity chips */}
+                <div className="flex items-center gap-1.5">
+                  {[1, 2, 3, 5].map((num) => (
+                    <button
+                      key={num}
+                      type="button"
+                      onClick={() => setQuantity(num)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        quantity === num
+                          ? 'bg-[#0B2A4A] text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
+
+            {/* Validate and add button */}
+            <button
+              type="button"
+              onClick={handleAddToCart}
+              className="w-full py-3.5 px-6 rounded-2xl bg-[#0B2A4A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#1E63B5] transition-all shadow-md active:scale-98 cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              <span>Valider et ajouter au panier • {formatFCFA(currentPrice * quantity)}</span>
+            </button>
 
             <button
               type="button"

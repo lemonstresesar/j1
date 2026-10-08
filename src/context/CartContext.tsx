@@ -72,27 +72,35 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addItem = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
+    const colorKey = item.selectedColor ? item.selectedColor.trim() : '';
+    const sizeKey = item.selectedSize ? item.selectedSize.trim() : '';
+    const compositeId = `${item.id}::${colorKey}::${sizeKey}`;
+
     setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
+      const existing = prev.find(
+        (i) =>
+          (i.cartItemId || i.id) === compositeId ||
+          (i.id === item.id && (i.selectedColor || '') === colorKey && (i.selectedSize || '') === sizeKey)
+      );
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
+          i === existing ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
-      return [...prev, { ...item, quantity }];
+      return [...prev, { ...item, cartItemId: compositeId, quantity }];
     });
     showToast(language === 'fr' ? 'Article ajouté au panier !' : 'Item added to cart!');
   };
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+    setItems((prev) => prev.filter((i) => (i.cartItemId || i.id) !== id));
   };
 
   const updateQuantity = (id: string, delta: number) => {
     setItems((prev) => {
       return prev
         .map((i) => {
-          if (i.id === id) {
+          if ((i.cartItemId || i.id) === id) {
             const newQty = i.quantity + delta;
             return newQty > 0 ? { ...i, quantity: newQty } : null;
           }
