@@ -7,6 +7,8 @@ import { translations } from '../../i18n/translations';
 import { submitOrder } from '../../services/storeService';
 import { buildWhatsAppMessage, createWhatsAppUrl } from '../../utils/whatsapp';
 
+import { sanitizeInput } from '../../utils/crypto';
+
 interface CheckoutModalProps {
   deliveryZones: DeliveryZone[];
   settings: ShopSettings;
@@ -102,12 +104,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         : formatFCFA(selectedZone!.price);
 
       const orderPayload = {
-        clientLastName: lastName.trim(),
-        clientFirstName: firstName.trim(),
-        whatsappNumber: whatsappNumber.trim(),
-        callNumber: callNumber.trim(),
-        cityAndNeighborhood: cityAndNeighborhood.trim(),
-        deliveryLocation: deliveryLocationLabel,
+        clientLastName: sanitizeInput(lastName, 100),
+        clientFirstName: sanitizeInput(firstName, 100),
+        whatsappNumber: sanitizeInput(whatsappNumber, 30),
+        callNumber: sanitizeInput(callNumber, 30),
+        cityAndNeighborhood: sanitizeInput(cityAndNeighborhood, 200),
+        deliveryLocation: sanitizeInput(deliveryLocationLabel, 200),
         deliveryPrice: deliveryPriceLabel,
         items: items.map((i) => ({
           id: i.id,
@@ -135,10 +137,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         return;
       }
 
+      // Step 2: Build WhatsApp Message and wa.me link
       const completedOrder: Order = {
         ...orderPayload,
         id: result.orderId,
-        status: 'en_attente',
+        status: 'enregistrée',
         createdAt: new Date().toISOString(),
       };
 

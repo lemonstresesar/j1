@@ -23,12 +23,25 @@ import { PWAInstallButton } from './components/common/PWAInstallButton';
 import { OfflineIndicator } from './components/common/OfflineIndicator';
 import { MobileNavBar } from './components/client/MobileNavBar';
 import { SearchPage } from './components/client/SearchPage';
+import {
+  isSecretPortalUnlocked,
+  unlockSecretPortal,
+  isAdminSessionActive,
+} from './services/authService';
 
 function StoreApp() {
   const { isCheckoutOpen, setIsCheckoutOpen, language } = useCart();
 
-  // Current URL path
-  const [currentPath, setCurrentPath] = useState<string>(() => window.location.pathname || '/');
+  // Current URL path with secret portal protection:
+  // Anyone typing /admin directly without unlocking via copyright is silently bounced to '/'
+  const [currentPath, setCurrentPath] = useState<string>(() => {
+    const path = window.location.pathname || '/';
+    if (path.startsWith('/admin') && !isSecretPortalUnlocked() && !isAdminSessionActive()) {
+      window.history.replaceState({}, '', '/');
+      return '/';
+    }
+    return path;
+  });
 
   // Real-time Firestore state
   const [products, setProducts] = useState<Product[]>([]);
@@ -43,7 +56,13 @@ function StoreApp() {
   // Sync route on browser navigation (Back / Forward)
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname || '/');
+      const path = window.location.pathname || '/';
+      if (path.startsWith('/admin') && !isSecretPortalUnlocked() && !isAdminSessionActive()) {
+        window.history.replaceState({}, '', '/');
+        setCurrentPath('/');
+        return;
+      }
+      setCurrentPath(path);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -102,6 +121,13 @@ function StoreApp() {
   }, [currentPath, products, packs]);
 
   const navigate = (path: string) => {
+    // SECURITY GATE: Redirect unauthorized direct attempts to access /admin
+    if (path.startsWith('/admin') && !isSecretPortalUnlocked() && !isAdminSessionActive()) {
+      window.history.replaceState({}, '', '/');
+      setCurrentPath('/');
+      return;
+    }
+
     window.history.pushState({}, '', path);
     setCurrentPath(path);
 
@@ -143,8 +169,13 @@ function StoreApp() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // If on admin route, render dedicated Admin Space
+  // If on admin route, verify portal security before rendering
   if (currentPath.startsWith('/admin')) {
+    if (!isSecretPortalUnlocked() && !isAdminSessionActive()) {
+      window.history.replaceState({}, '', '/');
+      setCurrentPath('/');
+      return null;
+    }
     return <AdminSpace onNavigateClient={() => navigate('/')} />;
   }
 
@@ -259,7 +290,10 @@ function StoreApp() {
             </div>
 
             <span
-              onClick={() => navigate('/admin')}
+              onClick={() => {
+                unlockSecretPortal();
+                navigate('/admin');
+              }}
               className="cursor-pointer select-none transition-colors hover:text-slate-500 text-xs text-slate-400"
               title=""
             >

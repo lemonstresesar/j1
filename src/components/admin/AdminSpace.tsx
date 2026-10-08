@@ -177,6 +177,7 @@ export const AdminSpace: React.FC<AdminSpaceProps> = ({ onNavigateClient }) => {
         onLoginSuccess={() => {
           setIsAdminLoggedIn(true);
         }}
+        onBackToStore={onNavigateClient}
       />
     );
   }
