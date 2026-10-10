@@ -22,8 +22,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   onOrderCompleted,
 }) => {
-  const { items, subtotal, clearCart, language } = useCart();
+  const { items, subtotal, clearCart, directCheckoutItem, setDirectCheckoutItem, language } = useCart();
   const t = translations[language];
+
+  // If a direct checkout item was selected, process only that item; otherwise use the whole cart
+  const isDirectPurchase = !!directCheckoutItem;
+  const activeItems = directCheckoutItem ? [directCheckoutItem] : items;
+  const activeSubtotal = directCheckoutItem
+    ? directCheckoutItem.price * directCheckoutItem.quantity
+    : subtotal;
 
   // Form fields
   const [lastName, setLastName] = useState('');
@@ -52,7 +59,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const deliveryPriceAmount = isOtherDestination ? 0 : selectedZone ? selectedZone.price : 0;
   const isDeliveryPending = isOtherDestination || !selectedZone;
-  const grandTotal = subtotal + deliveryPriceAmount;
+  const grandTotal = activeSubtotal + deliveryPriceAmount;
+
+  const handleModalClose = () => {
+    setDirectCheckoutItem(null);
+    onClose();
+  };
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
@@ -90,7 +102,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setSubmissionError(null);
 
     if (!validate()) return;
-    if (items.length === 0) return;
+    if (activeItems.length === 0) return;
 
     setIsSubmitting(true);
 
@@ -111,14 +123,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         cityAndNeighborhood: sanitizeInput(cityAndNeighborhood, 200),
         deliveryLocation: sanitizeInput(deliveryLocationLabel, 200),
         deliveryPrice: deliveryPriceLabel,
-        items: items.map((i) => ({
+        items: activeItems.map((i) => ({
           id: i.id,
           name: i.name,
           unitPrice: i.price,
           quantity: i.quantity,
           isPack: i.type === 'pack',
+          selectedColor: i.selectedColor,
+          selectedSize: i.selectedSize,
         })),
-        itemsTotal: subtotal,
+        itemsTotal: activeSubtotal,
         total: grandTotal,
         isDeliveryPending,
         language,
@@ -149,16 +163,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       const recipientPhone = settings.whatsappNumber || '+237696605586';
       const whatsappUrl = createWhatsAppUrl(recipientPhone, waMsg);
 
-      // Step 3: Set Confirmation state and clear cart
+      // Step 3: Set Confirmation state and clear appropriate item(s)
       setConfirmedOrder({
         id: result.orderId,
         whatsappUrl,
         totalDisplay: isDeliveryPending
-          ? `${formatFCFA(subtotal)} (${t.totalExcludingDelivery})`
+          ? `${formatFCFA(activeSubtotal)} (${t.totalExcludingDelivery})`
           : formatFCFA(grandTotal),
       });
 
-      clearCart();
+      if (isDirectPurchase) {
+        setDirectCheckoutItem(null);
+      } else {
+        clearCart();
+      }
       if (onOrderCompleted) onOrderCompleted();
 
       // Attempt non-blocking direct open or navigation
@@ -186,16 +204,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <div className="p-4 sm:p-6 bg-[#0B2A4A] text-white flex items-center justify-between">
           <div>
             <h2 className="text-lg sm:text-xl font-bold font-serif">
-              {confirmedOrder ? t.orderSuccessTitle : t.checkoutTitle}
+              {confirmedOrder
+                ? t.orderSuccessTitle
+                : isDirectPurchase
+                ? 'Commander cet article'
+                : t.checkoutTitle}
             </h2>
             <p className="text-xs text-slate-300 mt-0.5">
-              {confirmedOrder ? t.orderSuccessIntro : t.checkoutSubtitle}
+              {confirmedOrder
+                ? t.orderSuccessIntro
+                : isDirectPurchase
+                ? 'Finalisation de votre commande directe à Douala'
+                : t.checkoutSubtitle}
             </p>
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
+            onClick={handleModalClose}
+            className="p-1.5 text-white/70 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Fermer"
           >
             <X className="w-5 h-5" />
@@ -246,8 +272,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
             <button
               type="button"
-              onClick={onClose}
-              className="w-full py-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+              onClick={handleModalClose}
+              className="w-full py-3 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors cursor-pointer"
             >
               {t.returnHome}
             </button>
@@ -266,6 +292,40 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               className="hidden"
               aria-hidden="true"
             />
+
+            {/* Direct item preview card if direct purchase */}
+            {isDirectPurchase && directCheckoutItem && (
+              <div className="p-3.5 bg-[#EAF2FB] rounded-2xl border border-[#D3E4F7] flex items-center gap-3 animate-in fade-in">
+                <img
+                  src={directCheckoutItem.photo}
+                  alt={directCheckoutItem.name}
+                  className="w-14 h-14 object-cover rounded-xl bg-white border border-slate-200 shrink-0"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-[10px] font-extrabold text-[#1E63B5] uppercase tracking-wider flex items-center gap-1">
+                    <span>⚡ Commande directe</span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                    {directCheckoutItem.name}
+                  </h4>
+                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 mt-1">
+                    <span className="font-extrabold text-[#0B2A4A]">
+                      {directCheckoutItem.quantity} × {formatFCFA(directCheckoutItem.price)}
+                    </span>
+                    {directCheckoutItem.selectedColor && (
+                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-700">
+                        Couleur : {directCheckoutItem.selectedColor}
+                      </span>
+                    )}
+                    {directCheckoutItem.selectedSize && (
+                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-700">
+                        Taille : {directCheckoutItem.selectedSize}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {submissionError && (
               <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
@@ -422,8 +482,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {/* Order summary breakdown */}
             <div className="pt-2 border-t border-slate-100 space-y-2 text-xs">
               <div className="flex justify-between text-slate-600">
-                <span>{t.itemsTotal} ({items.length} {t.items})</span>
-                <span className="font-semibold text-slate-900">{formatFCFA(subtotal)}</span>
+                <span>{t.itemsTotal} ({activeItems.length} {activeItems.length === 1 ? t.item : t.items})</span>
+                <span className="font-semibold text-slate-900">{formatFCFA(activeSubtotal)}</span>
               </div>
               <div className="flex justify-between text-slate-600">
                 <span>{t.deliveryFee}</span>
@@ -435,7 +495,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 <span>{t.grandTotal}</span>
                 <div className="text-right">
                   <span className="font-serif">
-                    {isDeliveryPending ? formatFCFA(subtotal) : formatFCFA(grandTotal)}
+                    {isDeliveryPending ? formatFCFA(activeSubtotal) : formatFCFA(grandTotal)}
                   </span>
                   {isDeliveryPending && (
                     <span className="block text-[10px] text-slate-500 font-normal">

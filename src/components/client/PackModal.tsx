@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Share2, ShoppingBag, Plus, Minus, ArrowLeft, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Share2, ShoppingBag, Plus, Minus, ArrowLeft, Sparkles, CheckCircle2, Send } from 'lucide-react';
 import { Pack } from '../../types';
 import { formatFCFA, formatDoualaDateOnly } from '../../utils/formatters';
 import { useCart } from '../../context/CartContext';
@@ -11,7 +11,7 @@ interface PackModalProps {
 }
 
 export const PackModal: React.FC<PackModalProps> = ({ pack, onClose }) => {
-  const { addItem, showToast, setIsCartOpen, language } = useCart();
+  const { addItem, buyNow, showToast, setIsCartOpen, language } = useCart();
   const t = translations[language];
 
   const [quantity, setQuantity] = useState(1);
@@ -41,6 +41,21 @@ export const PackModal: React.FC<PackModalProps> = ({ pack, onClose }) => {
     } catch {
       showToast(directUrl);
     }
+  };
+
+  const handleDirectOrder = () => {
+    buyNow(
+      {
+        id: pack.id,
+        type: 'pack',
+        name: pack.name,
+        price: currentPrice,
+        originalPrice,
+        photo: pack.photo,
+      },
+      quantity
+    );
+    onClose();
   };
 
   const handleAddToCart = () => {
@@ -220,14 +235,28 @@ export const PackModal: React.FC<PackModalProps> = ({ pack, onClose }) => {
               </div>
             </div>
 
-            {/* Validate and add button */}
+            {/* Action buttons: Direct immediate order OR Add to cart */}
+            <button
+              type="button"
+              onClick={handleDirectOrder}
+              className="w-full py-3.5 px-6 rounded-2xl bg-[#0B2A4A] hover:bg-[#1E63B5] text-white font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 transition-all shadow-md active:scale-98 cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-emerald-400" />
+                <span>Valider et commander ce pack • {formatFCFA(currentPrice * quantity)}</span>
+              </div>
+              <span className="text-[11px] font-normal text-slate-200">
+                Commande directe sans passer par le panier
+              </span>
+            </button>
+
             <button
               type="button"
               onClick={handleAddToCart}
-              className="w-full py-3.5 px-6 rounded-2xl bg-[#0B2A4A] text-white font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#1E63B5] transition-all shadow-md active:scale-98 cursor-pointer"
+              className="w-full py-2.5 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-200/80 active:scale-98 transition-all cursor-pointer"
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>Valider et ajouter au panier • {formatFCFA(currentPrice * quantity)}</span>
+              <ShoppingBag className="w-4 h-4 text-[#0B2A4A]" />
+              <span>Ajouter au panier (continuer mes achats)</span>
             </button>
 
             <button

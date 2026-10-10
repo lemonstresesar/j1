@@ -12,6 +12,10 @@ export interface Product {
   discountPrice?: number;
   photos: string[];
   isHidden: boolean;
+  hasMultipleColors?: boolean;
+  availableColors?: string[];
+  hasMultipleSizes?: boolean;
+  availableSizes?: string[];
   createdAt: string;
   updatedAt: string;
 }

@@ -25,7 +25,13 @@ export function buildWhatsAppMessage(order: Order, lang: Language): string {
   const t = translations[lang];
 
   const itemsLines = order.items
-    .map(item => `  • ${item.name} (x${item.quantity}) : ${formatFCFA(item.unitPrice * item.quantity)}`)
+    .map(item => {
+      const details: string[] = [];
+      if (item.selectedColor) details.push(`Couleur: ${item.selectedColor}`);
+      if (item.selectedSize) details.push(`Taille: ${item.selectedSize}`);
+      const variantStr = details.length > 0 ? ` [${details.join(', ')}]` : '';
+      return `  • ${item.name}${variantStr} (x${item.quantity}) : ${formatFCFA(item.unitPrice * item.quantity)}`;
+    })
     .join('\n');
 
   const deliveryCostDisplay = order.isDeliveryPending

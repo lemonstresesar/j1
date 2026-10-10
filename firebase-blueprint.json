@@ -41,6 +41,22 @@
           "type": "boolean",
           "description": "Whether the product is hidden from customer storefront"
         },
+        "hasMultipleColors": {
+          "type": "boolean",
+          "description": "Whether multiple color variations exist for this product"
+        },
+        "availableColors": {
+          "type": "array",
+          "description": "List of available colors chosen and provided by the seller"
+        },
+        "hasMultipleSizes": {
+          "type": "boolean",
+          "description": "Whether size or shoe-size variations exist for this product"
+        },
+        "availableSizes": {
+          "type": "array",
+          "description": "List of available sizes or shoe-sizes chosen and provided by the seller"
+        },
         "createdAt": {
           "type": "string",
           "description": "ISO timestamp of creation"

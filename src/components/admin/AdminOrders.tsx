@@ -459,9 +459,21 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
                         >
                           <div>
                             <span className="font-semibold text-slate-900 block">{item.name}</span>
-                            <span className="text-[11px] text-slate-500">
-                              Quantité : {item.quantity} × {formatFCFA(item.unitPrice)}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-slate-500">
+                                Quantité : {item.quantity} × {formatFCFA(item.unitPrice)}
+                              </span>
+                              {item.selectedColor && (
+                                <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-200">
+                                  Couleur : {item.selectedColor}
+                                </span>
+                              )}
+                              {item.selectedSize && (
+                                <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200">
+                                  Taille : {item.selectedSize}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <span className="font-bold text-[#0B2A4A] font-serif">
                             {formatFCFA(item.unitPrice * item.quantity)}

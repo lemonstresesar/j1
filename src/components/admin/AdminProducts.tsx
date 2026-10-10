@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Eye, EyeOff, Upload, X, Search, Check, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, EyeOff, Upload, X, Search, Check, Image as ImageIcon, Palette, Ruler, Tag } from 'lucide-react';
 import { Product, ProductCategory, ProductGender } from '../../types';
 import { formatFCFA, compressImageFile, cleanFirestorePayload } from '../../utils/formatters';
 import { addProduct, updateProduct, deleteProduct } from '../../services/storeService';
@@ -27,6 +27,17 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
   const [discountPrice, setDiscountPrice] = useState<number | ''>('');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isHidden, setIsHidden] = useState(false);
+
+  // Colors variation states
+  const [hasMultipleColors, setHasMultipleColors] = useState(false);
+  const [availableColors, setAvailableColors] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState('');
+
+  // Sizes variation states
+  const [hasMultipleSizes, setHasMultipleSizes] = useState(false);
+  const [availableSizes, setAvailableSizes] = useState<string[]>([]);
+  const [sizeInput, setSizeInput] = useState('');
+
   const [isCompressing, setIsCompressing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -41,6 +52,12 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
     setDiscountPrice('');
     setPhotos([]);
     setIsHidden(false);
+    setHasMultipleColors(false);
+    setAvailableColors([]);
+    setColorInput('');
+    setHasMultipleSizes(false);
+    setAvailableSizes([]);
+    setSizeInput('');
     setFormError(null);
     setIsModalOpen(true);
   };
@@ -55,8 +72,40 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
     setDiscountPrice(p.discountPrice || '');
     setPhotos(p.photos || []);
     setIsHidden(p.isHidden || false);
+    setHasMultipleColors(!!(p.availableColors && p.availableColors.length > 0) || p.hasMultipleColors || false);
+    setAvailableColors(p.availableColors || []);
+    setColorInput('');
+    setHasMultipleSizes(!!(p.availableSizes && p.availableSizes.length > 0) || p.hasMultipleSizes || false);
+    setAvailableSizes(p.availableSizes || []);
+    setSizeInput('');
     setFormError(null);
     setIsModalOpen(true);
+  };
+
+  const handleAddColor = (colToAdd?: string) => {
+    const col = (colToAdd || colorInput).trim();
+    if (!col) return;
+    if (!availableColors.includes(col)) {
+      setAvailableColors((prev) => [...prev, col]);
+    }
+    setColorInput('');
+  };
+
+  const handleRemoveColor = (colToRemove: string) => {
+    setAvailableColors((prev) => prev.filter((c) => c !== colToRemove));
+  };
+
+  const handleAddSize = (szToAdd?: string) => {
+    const sz = (szToAdd || sizeInput).trim();
+    if (!sz) return;
+    if (!availableSizes.includes(sz)) {
+      setAvailableSizes((prev) => [...prev, sz]);
+    }
+    setSizeInput('');
+  };
+
+  const handleRemoveSize = (szToRemove: string) => {
+    setAvailableSizes((prev) => prev.filter((s) => s !== szToRemove));
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,6 +168,10 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
         price: Number(price),
         photos,
         isHidden,
+        hasMultipleColors: Boolean(hasMultipleColors && availableColors.length > 0),
+        availableColors: hasMultipleColors && availableColors.length > 0 ? availableColors : [],
+        hasMultipleSizes: Boolean(hasMultipleSizes && availableSizes.length > 0),
+        availableSizes: hasMultipleSizes && availableSizes.length > 0 ? availableSizes : [],
         ...(discountPrice !== '' && Number(discountPrice) > 0 ? { discountPrice: Number(discountPrice) } : {}),
       };
       const payload = cleanFirestorePayload(rawPayload);
@@ -291,6 +344,29 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
                           </span>
                         )}
                       </div>
+
+                      {/* Configured variations badges */}
+                      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                        {product.availableColors && product.availableColors.length > 0 ? (
+                          <span className="text-[10px] font-semibold bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md border border-purple-200">
+                            🎨 {product.availableColors.join(', ')}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                            Couleur unique
+                          </span>
+                        )}
+
+                        {product.availableSizes && product.availableSizes.length > 0 ? (
+                          <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-200">
+                            📏 {product.availableSizes.join(', ')}
+                          </span>
+                        ) : product.category === 'vetements' || product.category === 'chaussures' ? (
+                          <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                            Taille unique
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
 
@@ -457,6 +533,244 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
                   placeholder="Détails sur la matière, coupe, style..."
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs sm:text-sm outline-none focus:border-[#1E63B5]"
                 />
+              </div>
+
+              {/* SECTION: Couleurs et Tailles disponibles (Configurées par la vendeuse) */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-[#1E63B5]" />
+                  <h4 className="text-xs sm:text-sm font-bold text-[#0B2A4A]">
+                    Caractéristiques & Choix disponibles (Couleurs & Tailles)
+                  </h4>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-snug">
+                  C'est vous qui définissez exactement quelles couleurs et quelles tailles le client pourra choisir lors de sa commande.
+                </p>
+
+                {/* 1. Couleurs */}
+                <div className="pt-2 border-t border-slate-200/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                      <input
+                        type="checkbox"
+                        checked={hasMultipleColors}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setHasMultipleColors(checked);
+                        }}
+                        className="rounded border-slate-300 text-[#0B2A4A] focus:ring-[#1E63B5]"
+                      />
+                      <Palette className="w-3.5 h-3.5 text-[#1E63B5]" />
+                      <span>Plusieurs couleurs disponibles (définies par vous)</span>
+                    </label>
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      {hasMultipleColors ? `${availableColors.length} couleur(s)` : 'Couleur unique'}
+                    </span>
+                  </div>
+
+                  {hasMultipleColors && (
+                    <p className="text-[11px] text-slate-600 bg-blue-50/60 p-2 rounded-lg border border-blue-100">
+                      ℹ️ Seules les couleurs ajoutées ci-dessous seront proposées au client. Si aucune couleur n'est ajoutée, le produit restera à couleur unique.
+                    </p>
+                  )}
+
+                  {hasMultipleColors ? (
+                    <div className="space-y-2 pl-6">
+                      {/* Active color badges */}
+                      <div className="flex flex-wrap gap-1.5 min-h-6">
+                        {availableColors.length === 0 ? (
+                          <span className="text-[11px] text-amber-700 italic">
+                            Aucune couleur sélectionnée. Cliquez ci-dessous ou ajoutez-en une.
+                          </span>
+                        ) : (
+                          availableColors.map((color) => (
+                            <span
+                              key={color}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-xs"
+                            >
+                              <span>{color}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveColor(color)}
+                                className="text-slate-400 hover:text-rose-600 cursor-pointer p-0.5"
+                                title="Supprimer cette couleur"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Quick presets */}
+                      <div className="pt-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                          Suggestions rapides (cliquez pour ajouter) :
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {['Noir', 'Blanc', 'Bleu marine', 'Beige', 'Marron', 'Rouge', 'Vert', 'Doré', 'Gris', 'Rose'].map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => handleAddColor(c)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                                availableColors.includes(c)
+                                  ? 'bg-[#0B2A4A] text-white'
+                                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              + {c}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Saisie personnalisée */}
+                      <div className="flex gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={colorInput}
+                          onChange={(e) => setColorInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddColor();
+                            }
+                          }}
+                          placeholder="Autre couleur (ex: Bleu ciel, Kaki, etc.)..."
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white outline-none focus:border-[#1E63B5]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddColor()}
+                          className="px-3 py-1.5 rounded-xl bg-[#0B2A4A] text-white text-xs font-bold hover:bg-[#1E63B5] transition-colors cursor-pointer"
+                        >
+                          Ajouter
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 pl-6">
+                      ✓ Couleur unique (selon la photo). Le client ne verra pas de sélection superflue.
+                    </p>
+                  )}
+                </div>
+
+                {/* 2. Tailles / Pointures */}
+                <div className="pt-3 border-t border-slate-200/60 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                      <input
+                        type="checkbox"
+                        checked={hasMultipleSizes}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setHasMultipleSizes(checked);
+                        }}
+                        className="rounded border-slate-300 text-[#0B2A4A] focus:ring-[#1E63B5]"
+                      />
+                      <Ruler className="w-3.5 h-3.5 text-[#1E63B5]" />
+                      <span>Tailles ou pointures disponibles (définies par vous)</span>
+                    </label>
+                    <span className="text-[11px] font-semibold text-slate-500">
+                      {hasMultipleSizes ? `${availableSizes.length} taille(s)` : 'Taille unique'}
+                    </span>
+                  </div>
+
+                  {hasMultipleSizes && (
+                    <p className="text-[11px] text-slate-600 bg-blue-50/60 p-2 rounded-lg border border-blue-100">
+                      ℹ️ Seules les tailles/pointures ajoutées ci-dessous seront proposées au client. Si aucune taille n'est ajoutée, le produit restera en taille unique standard.
+                    </p>
+                  )}
+
+                  {hasMultipleSizes ? (
+                    <div className="space-y-2 pl-6">
+                      {/* Active size badges */}
+                      <div className="flex flex-wrap gap-1.5 min-h-6">
+                        {availableSizes.length === 0 ? (
+                          <span className="text-[11px] text-amber-700 italic">
+                            Aucune taille sélectionnée. Cliquez ci-dessous ou ajoutez-en une.
+                          </span>
+                        ) : (
+                          availableSizes.map((size) => (
+                            <span
+                              key={size}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-xs"
+                            >
+                              <span>{size}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSize(size)}
+                                className="text-slate-400 hover:text-rose-600 cursor-pointer p-0.5"
+                                title="Supprimer cette taille"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Quick size presets based on category */}
+                      <div className="pt-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                          Suggestions rapides pour {category} :
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {(category === 'chaussures'
+                            ? ['37', '38', '39', '40', '41', '42', '43', '44', '45']
+                            : category === 'vetements'
+                            ? ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL']
+                            : category === 'parfums'
+                            ? ['30 ml', '50 ml', '100 ml', '200 ml']
+                            : ['Petit format', 'Moyen format', 'Grand format', 'Taille Unique']
+                          ).map((s) => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => handleAddSize(s)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                                availableSizes.includes(s)
+                                  ? 'bg-[#0B2A4A] text-white'
+                                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              + {s}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Saisie personnalisée */}
+                      <div className="flex gap-2 pt-1">
+                        <input
+                          type="text"
+                          value={sizeInput}
+                          onChange={(e) => setSizeInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddSize();
+                            }
+                          }}
+                          placeholder="Autre taille ou pointure (ex: 46, 4XL, 150ml)..."
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-200 text-xs bg-white outline-none focus:border-[#1E63B5]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddSize()}
+                          className="px-3 py-1.5 rounded-xl bg-[#0B2A4A] text-white text-xs font-bold hover:bg-[#1E63B5] transition-colors cursor-pointer"
+                        >
+                          Ajouter
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-500 pl-6">
+                      ✓ Taille unique standard. Aucune sélection de taille ne sera demandée au client.
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Photos upload (up to 3 compressed to ~800px) */}

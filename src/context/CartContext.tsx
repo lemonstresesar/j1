@@ -4,6 +4,9 @@ import { CartItem, Language } from '../types';
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
+  buyNow: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
+  directCheckoutItem: CartItem | null;
+  setDirectCheckoutItem: (item: CartItem | null) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -45,6 +48,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [directCheckoutItem, setDirectCheckoutItem] = useState<CartItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -92,6 +96,22 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast(language === 'fr' ? 'Article ajouté au panier !' : 'Item added to cart!');
   };
 
+  const buyNow = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
+    const colorKey = item.selectedColor ? item.selectedColor.trim() : '';
+    const sizeKey = item.selectedSize ? item.selectedSize.trim() : '';
+    const compositeId = `${item.id}::${colorKey}::${sizeKey}`;
+
+    const directItem: CartItem = {
+      ...item,
+      cartItemId: compositeId,
+      quantity,
+    };
+
+    setDirectCheckoutItem(directItem);
+    setIsCartOpen(false);
+    setIsCheckoutOpen(true);
+  };
+
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((i) => (i.cartItemId || i.id) !== id));
   };
@@ -122,6 +142,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         items,
         addItem,
+        buyNow,
+        directCheckoutItem,
+        setDirectCheckoutItem,
         removeItem,
         updateQuantity,
         clearCart,

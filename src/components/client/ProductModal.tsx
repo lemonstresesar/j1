@@ -12,6 +12,8 @@ import {
   Sparkles,
   Palette,
   Ruler,
+  Send,
+  Camera,
 } from 'lucide-react';
 import { Product } from '../../types';
 import { formatFCFA } from '../../utils/formatters';
@@ -24,7 +26,7 @@ interface ProductModalProps {
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
-  const { addItem, showToast, setIsCartOpen, language } = useCart();
+  const { addItem, buyNow, showToast, setIsCartOpen, language } = useCart();
   const t = translations[language];
 
   const photos =
@@ -37,37 +39,25 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
   // 1. Quantity choice
   const [quantity, setQuantity] = useState(1);
 
-  // 2. Color choice
-  const defaultColors = [
-    'Couleur de la photo',
-    'Noir',
-    'Blanc',
-    'Bleu nuit',
-    'Beige / Nude',
-    'Marron / Camel',
-    'Doré',
-    'Rouge bordeaux',
-  ];
-  const [selectedColor, setSelectedColor] = useState<string>(defaultColors[0]);
-  const [customColor, setCustomColor] = useState('');
-  const [isCustomColorActive, setIsCustomColorActive] = useState(false);
+  // 2. Color choices: STRICTLY defined by the seller.
+  // If the seller enabled multiple colors AND added specific colors:
+  const hasMultipleColors = Boolean(
+    product.hasMultipleColors && product.availableColors && product.availableColors.length > 0
+  );
+  const availableColorsList = hasMultipleColors ? product.availableColors! : [];
+  const [selectedColor, setSelectedColor] = useState<string>(
+    hasMultipleColors && availableColorsList.length > 0 ? availableColorsList[0] : 'Conforme à la photo'
+  );
 
-  // 3. Size / Pointure choice depending on category
-  const getAvailableSizes = () => {
-    if (product.category === 'chaussures') {
-      return ['38', '39', '40', '41', '42', '43', '44', '45'];
-    }
-    if (product.category === 'vetements') {
-      return ['S', 'M', 'L', 'XL', '2XL', '3XL'];
-    }
-    if (product.category === 'parfums') {
-      return ['50 ml', '100 ml', 'Flacon Standard'];
-    }
-    return ['Taille Unique / Standard'];
-  };
-
-  const availableSizes = getAvailableSizes();
-  const [selectedSize, setSelectedSize] = useState<string>(availableSizes[0]);
+  // 3. Size / Pointure choices: STRICTLY defined by the seller.
+  // If the seller enabled multiple sizes AND added specific sizes:
+  const hasMultipleSizes = Boolean(
+    product.hasMultipleSizes && product.availableSizes && product.availableSizes.length > 0
+  );
+  const availableSizesList = hasMultipleSizes ? product.availableSizes! : [];
+  const [selectedSize, setSelectedSize] = useState<string>(
+    hasMultipleSizes && availableSizesList.length > 0 ? availableSizesList[0] : 'Taille unique'
+  );
 
   const hasDiscount = product.discountPrice && product.discountPrice < product.price;
   const currentPrice = hasDiscount ? product.discountPrice! : product.price;
@@ -96,10 +86,30 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
     }
   };
 
-  const finalColorChoice = isCustomColorActive && customColor.trim()
-    ? customColor.trim()
-    : selectedColor;
+  const finalColorChoice = hasMultipleColors ? selectedColor : 'Conforme à la photo';
+  const finalSizeChoice = hasMultipleSizes ? selectedSize : undefined;
 
+  // Direct checkout action (Order immediately without visiting cart)
+  const handleDirectOrder = () => {
+    buyNow(
+      {
+        id: product.id,
+        type: 'product',
+        name: product.name,
+        price: currentPrice,
+        originalPrice,
+        photo: photos[0],
+        category: product.category,
+        gender: product.gender,
+        selectedColor: finalColorChoice,
+        selectedSize: finalSizeChoice,
+      },
+      quantity
+    );
+    onClose();
+  };
+
+  // Add to cart action (Allows adding more items)
   const handleAddToCart = () => {
     addItem(
       {
@@ -112,12 +122,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
         category: product.category,
         gender: product.gender,
         selectedColor: finalColorChoice,
-        selectedSize: selectedSize,
+        selectedSize: finalSizeChoice,
       },
       quantity
     );
     onClose();
-    // Open cart drawer immediately so customer sees their configured item
     setIsCartOpen(true);
   };
 
@@ -314,100 +323,107 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
               </div>
             </div>
 
-            {/* SECTION 2: Choix de la Couleur */}
-            <div className="mt-4 pt-3 space-y-2">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
+            {/* SECTION 2: Choix de la Couleur (Strictement défini par le vendeur) */}
+            {hasMultipleColors ? (
+              <div className="mt-4 pt-3 space-y-2">
+                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-[#0B2A4A] text-white flex items-center justify-center text-[10px] font-extrabold">
+                      2
+                    </span>
+                    <Palette className="w-3.5 h-3.5 text-[#1E63B5]" />
+                    <span>Couleur disponible chez le vendeur :</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-[#1E63B5]">
+                    {selectedColor}
+                  </span>
+                </label>
+
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {availableColorsList.map((color) => {
+                    const isSelected = selectedColor === color;
+                    return (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => setSelectedColor(color)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#0B2A4A] text-white font-bold shadow-xs scale-102 ring-2 ring-[#0B2A4A]/20'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {color}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 pt-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
                   <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-extrabold">
                     2
                   </span>
                   <Palette className="w-3.5 h-3.5 text-[#1E63B5]" />
-                  <span>Choisir la Couleur :</span>
-                </span>
-                <span className="text-[11px] font-semibold text-[#1E63B5]">
-                  {finalColorChoice}
-                </span>
-              </label>
-
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {defaultColors.map((color) => {
-                  const isSelected = !isCustomColorActive && selectedColor === color;
-                  return (
-                    <button
-                      key={color}
-                      type="button"
-                      onClick={() => {
-                        setIsCustomColorActive(false);
-                        setSelectedColor(color);
-                      }}
-                      className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#0B2A4A] text-white font-bold shadow-xs scale-102 ring-2 ring-[#0B2A4A]/20'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {color}
-                    </button>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => setIsCustomColorActive(true)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    isCustomColorActive
-                      ? 'bg-[#0B2A4A] text-white font-bold ring-2 ring-[#0B2A4A]/20'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  Autre précision...
-                </button>
+                  <span>Couleur du produit :</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center gap-2 text-xs text-slate-700">
+                  <Camera className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="font-semibold">Couleur unique • Conforme à la photo de l'article</span>
+                </div>
               </div>
+            )}
 
-              {isCustomColorActive && (
-                <input
-                  type="text"
-                  value={customColor}
-                  onChange={(e) => setCustomColor(e.target.value)}
-                  placeholder="Précisez votre couleur (ex : Vert émeraude, Rose poudré...)"
-                  className="w-full mt-2 px-3.5 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-[#1E63B5]"
-                />
-              )}
-            </div>
+            {/* SECTION 3: Choix de la Taille / Pointure (Strictement défini par le vendeur) */}
+            {hasMultipleSizes ? (
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
+                <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-[#0B2A4A] text-white flex items-center justify-center text-[10px] font-extrabold">
+                      3
+                    </span>
+                    <Ruler className="w-3.5 h-3.5 text-[#1E63B5]" />
+                    <span>Choisir votre {sizeTypeLabel} :</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-[#1E63B5]">{selectedSize}</span>
+                </label>
 
-            {/* SECTION 3: Choix de la Taille / Pointure */}
-            <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
-              <label className="text-xs font-bold text-slate-800 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {availableSizesList.map((size) => {
+                    const isSelected = selectedSize === size;
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setSelectedSize(size)}
+                        className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#0B2A4A] text-white shadow-xs scale-102 ring-2 ring-[#0B2A4A]/20'
+                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
                   <span className="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-extrabold">
                     3
                   </span>
                   <Ruler className="w-3.5 h-3.5 text-[#1E63B5]" />
-                  <span>Choisir la {sizeTypeLabel} :</span>
-                </span>
-                <span className="text-[11px] font-semibold text-[#1E63B5]">{selectedSize}</span>
-              </label>
-
-              <div className="flex flex-wrap gap-2 pt-1">
-                {availableSizes.map((size) => {
-                  const isSelected = selectedSize === size;
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isSelected
-                          ? 'bg-[#0B2A4A] text-white shadow-xs scale-102 ring-2 ring-[#0B2A4A]/20'
-                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
+                  <span>{sizeTypeLabel} :</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/70 flex items-center gap-2 text-xs text-slate-700">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-semibold">Taille / Pointure unique standard</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Description */}
             {product.description && (
@@ -422,23 +438,37 @@ export const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) 
             )}
           </div>
 
-          {/* Action footer: Validation & Add to cart */}
+          {/* Action footer: Direct Order (without visiting cart) OR Add to cart */}
           <div className="mt-6 pt-4 border-t border-slate-100 space-y-2.5">
+            {/* Direct immediate order button (No cart needed) */}
+            <button
+              type="button"
+              onClick={handleDirectOrder}
+              className="w-full py-3.5 px-6 rounded-2xl bg-[#0B2A4A] hover:bg-[#1E63B5] text-white font-bold text-sm sm:text-base flex flex-col items-center justify-center gap-0.5 shadow-lg shadow-[#0B2A4A]/20 active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Send className="w-4 h-4 text-emerald-400" />
+                <span>Valider et commander cet article • {formatFCFA(currentPrice * quantity)}</span>
+              </div>
+              <span className="text-[11px] font-normal text-slate-200">
+                Commande directe sans passer par le panier
+              </span>
+            </button>
+
+            {/* Add to cart button */}
             <button
               type="button"
               onClick={handleAddToCart}
-              className="w-full py-4 px-6 rounded-2xl bg-[#0B2A4A] hover:bg-[#1E63B5] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-[#0B2A4A]/15 active:scale-98 transition-all cursor-pointer"
+              className="w-full py-2.5 px-6 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 border border-slate-200/80 active:scale-[0.98] transition-all cursor-pointer"
             >
-              <ShoppingBag className="w-4 h-4" />
-              <span>
-                Valider et ajouter au panier • {formatFCFA(currentPrice * quantity)}
-              </span>
+              <ShoppingBag className="w-4 h-4 text-[#0B2A4A]" />
+              <span>Ajouter au panier (continuer mes achats)</span>
             </button>
 
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-1.5 text-center text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+              className="w-full py-1 text-center text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>{t.backToCatalog}</span>
