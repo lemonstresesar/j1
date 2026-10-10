@@ -73,7 +73,7 @@ service cloud.firestore {
         && data.clientFirstName is string && data.clientFirstName.size() > 0 && data.clientFirstName.size() <= 100
         && data.whatsappNumber is string && data.whatsappNumber.size() >= 6 && data.whatsappNumber.size() <= 30
         && data.callNumber is string && data.callNumber.size() >= 6 && data.callNumber.size() <= 30
-        && data.cityAndNeighborhood is string && data.cityAndNeighborhood.size() > 0 && data.cityAndNeighborhood.size() <= 200
+        && (!('cityAndNeighborhood' in data) || (data.cityAndNeighborhood is string && data.cityAndNeighborhood.size() <= 200))
         && data.deliveryLocation is string && data.deliveryLocation.size() > 0 && data.deliveryLocation.size() <= 200
         && data.deliveryPrice is string && data.deliveryPrice.size() <= 50
         && data.items is list && data.items.size() > 0 && data.items.size() <= 50

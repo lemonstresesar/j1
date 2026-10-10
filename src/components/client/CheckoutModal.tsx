@@ -22,14 +22,27 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   onOrderCompleted,
 }) => {
-  const { items, subtotal, clearCart, directCheckoutItem, setDirectCheckoutItem, language } = useCart();
+  const {
+    items,
+    subtotal,
+    clearCart,
+    directCheckoutItem,
+    directCheckoutItems,
+    setDirectCheckoutItem,
+    setDirectCheckoutItems,
+    language,
+  } = useCart();
   const t = translations[language];
 
-  // If a direct checkout item was selected, process only that item; otherwise use the whole cart
-  const isDirectPurchase = !!directCheckoutItem;
-  const activeItems = directCheckoutItem ? [directCheckoutItem] : items;
-  const activeSubtotal = directCheckoutItem
-    ? directCheckoutItem.price * directCheckoutItem.quantity
+  // If direct checkout item(s) were selected, process only those items; otherwise use the whole cart
+  const isDirectPurchase = Boolean((directCheckoutItems && directCheckoutItems.length > 0) || directCheckoutItem);
+  const activeItems = directCheckoutItems && directCheckoutItems.length > 0
+    ? directCheckoutItems
+    : directCheckoutItem
+    ? [directCheckoutItem]
+    : items;
+  const activeSubtotal = isDirectPurchase
+    ? activeItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
     : subtotal;
 
   // Form fields
@@ -37,7 +50,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [firstName, setFirstName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [callNumber, setCallNumber] = useState('');
-  const [cityAndNeighborhood, setCityAndNeighborhood] = useState('Douala - ');
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [customDestination, setCustomDestination] = useState('');
   const [honeypot, setHoneypot] = useState(''); // Anti-bot trap
@@ -63,6 +75,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   const handleModalClose = () => {
     setDirectCheckoutItem(null);
+    setDirectCheckoutItems(null);
     onClose();
   };
 
@@ -81,10 +94,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const cleanCall = callNumber.replace(/\D/g, '');
     if (!cleanCall || cleanCall.length < 8) {
       errs.callNumber = t.errPhoneInvalid;
-    }
-
-    if (!cityAndNeighborhood.trim() || cityAndNeighborhood.trim() === 'Douala -') {
-      errs.cityAndNeighborhood = t.errRequired;
     }
 
     if (!selectedZoneId) {
@@ -120,7 +129,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         clientFirstName: sanitizeInput(firstName, 100),
         whatsappNumber: sanitizeInput(whatsappNumber, 30),
         callNumber: sanitizeInput(callNumber, 30),
-        cityAndNeighborhood: sanitizeInput(cityAndNeighborhood, 200),
+        cityAndNeighborhood: sanitizeInput(deliveryLocationLabel, 200),
         deliveryLocation: sanitizeInput(deliveryLocationLabel, 200),
         deliveryPrice: deliveryPriceLabel,
         items: activeItems.map((i) => ({
@@ -174,6 +183,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
       if (isDirectPurchase) {
         setDirectCheckoutItem(null);
+        setDirectCheckoutItems(null);
       } else {
         clearCart();
       }
@@ -294,35 +304,47 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             />
 
             {/* Direct item preview card if direct purchase */}
-            {isDirectPurchase && directCheckoutItem && (
-              <div className="p-3.5 bg-[#EAF2FB] rounded-2xl border border-[#D3E4F7] flex items-center gap-3 animate-in fade-in">
-                <img
-                  src={directCheckoutItem.photo}
-                  alt={directCheckoutItem.name}
-                  className="w-14 h-14 object-cover rounded-xl bg-white border border-slate-200 shrink-0"
-                />
-                <div className="flex-1 min-w-0">
+            {isDirectPurchase && activeItems.length > 0 && (
+              <div className="p-3.5 bg-[#EAF2FB] rounded-2xl border border-[#D3E4F7] space-y-2.5 animate-in fade-in">
+                <div className="flex items-center justify-between">
                   <div className="text-[10px] font-extrabold text-[#1E63B5] uppercase tracking-wider flex items-center gap-1">
                     <span>⚡ Commande directe</span>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
-                    {directCheckoutItem.name}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 mt-1">
-                    <span className="font-extrabold text-[#0B2A4A]">
-                      {directCheckoutItem.quantity} × {formatFCFA(directCheckoutItem.price)}
-                    </span>
-                    {directCheckoutItem.selectedColor && (
-                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-700">
-                        Couleur : {directCheckoutItem.selectedColor}
-                      </span>
-                    )}
-                    {directCheckoutItem.selectedSize && (
-                      <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-700">
-                        Taille : {directCheckoutItem.selectedSize}
-                      </span>
-                    )}
-                  </div>
+                  <span className="text-xs font-extrabold text-[#0B2A4A]">
+                    {activeItems.reduce((acc, i) => acc + i.quantity, 0)} pièce(s) • {formatFCFA(activeSubtotal)}
+                  </span>
+                </div>
+
+                <div className="divide-y divide-blue-100/70">
+                  {activeItems.map((item, idx) => (
+                    <div key={item.cartItemId || idx} className="py-2 first:pt-0 last:pb-0 flex items-center gap-3">
+                      <img
+                        src={item.photo}
+                        alt={item.name}
+                        className="w-12 h-12 object-cover rounded-xl bg-white border border-slate-200 shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 truncate">
+                          {item.name}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-600 mt-0.5">
+                          <span className="font-extrabold text-[#0B2A4A]">
+                            {item.quantity} × {formatFCFA(item.price)}
+                          </span>
+                          {item.selectedColor && (
+                            <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-700">
+                              Couleur : {item.selectedColor}
+                            </span>
+                          )}
+                          {item.selectedSize && (
+                            <span className="bg-white px-2 py-0.5 rounded-md border border-slate-200 text-[10px] font-semibold text-slate-700">
+                              Taille : {item.selectedSize}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -410,25 +432,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
             </div>
 
-            {/* City and neighborhood */}
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                {t.cityAndNeighborhood} *
-              </label>
-              <input
-                type="text"
-                required
-                value={cityAndNeighborhood}
-                onChange={(e) => setCityAndNeighborhood(e.target.value)}
-                placeholder={t.cityPlaceholder}
-                className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm ${
-                  errors.cityAndNeighborhood ? 'border-rose-400 bg-rose-50/50' : 'border-slate-200 focus:border-[#1E63B5]'
-                } outline-none`}
-              />
-              {errors.cityAndNeighborhood && (
-                <p className="text-[10px] text-rose-500 mt-1">{errors.cityAndNeighborhood}</p>
-              )}
-            </div>
+
 
             {/* Delivery zone selection */}
             <div>

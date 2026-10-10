@@ -4,9 +4,13 @@ import { CartItem, Language } from '../types';
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
+  addMultipleItems: (itemsList: Array<{ item: Omit<CartItem, 'quantity'>; quantity: number }>) => void;
   buyNow: (item: Omit<CartItem, 'quantity'>, quantity?: number) => void;
+  buyNowMultiple: (itemsList: Array<{ item: Omit<CartItem, 'quantity'>; quantity: number }>) => void;
   directCheckoutItem: CartItem | null;
   setDirectCheckoutItem: (item: CartItem | null) => void;
+  directCheckoutItems: CartItem[] | null;
+  setDirectCheckoutItems: (items: CartItem[] | null) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, delta: number) => void;
   clearCart: () => void;
@@ -48,8 +52,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-  const [directCheckoutItem, setDirectCheckoutItem] = useState<CartItem | null>(null);
+  const [directCheckoutItem, setDirectCheckoutItemState] = useState<CartItem | null>(null);
+  const [directCheckoutItems, setDirectCheckoutItems] = useState<CartItem[] | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const setDirectCheckoutItem = (item: CartItem | null) => {
+    setDirectCheckoutItemState(item);
+    if (!item) {
+      setDirectCheckoutItems(null);
+    } else {
+      setDirectCheckoutItems([item]);
+    }
+  };
 
   useEffect(() => {
     try {
@@ -96,6 +110,41 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast(language === 'fr' ? 'Article ajouté au panier !' : 'Item added to cart!');
   };
 
+  const addMultipleItems = (itemsList: Array<{ item: Omit<CartItem, 'quantity'>; quantity: number }>) => {
+    if (!itemsList || itemsList.length === 0) return;
+    setItems((prev) => {
+      let currentItems = [...prev];
+      itemsList.forEach(({ item, quantity }) => {
+        const colorKey = item.selectedColor ? item.selectedColor.trim() : '';
+        const sizeKey = item.selectedSize ? item.selectedSize.trim() : '';
+        const compositeId = `${item.id}::${colorKey}::${sizeKey}`;
+
+        const existingIndex = currentItems.findIndex(
+          (i) =>
+            (i.cartItemId || i.id) === compositeId ||
+            (i.id === item.id && (i.selectedColor || '') === colorKey && (i.selectedSize || '') === sizeKey)
+        );
+
+        if (existingIndex >= 0) {
+          currentItems[existingIndex] = {
+            ...currentItems[existingIndex],
+            quantity: currentItems[existingIndex].quantity + quantity,
+          };
+        } else {
+          currentItems.push({
+            ...item,
+            cartItemId: compositeId,
+            quantity,
+          });
+        }
+      });
+      return currentItems;
+    });
+
+    const totalQty = itemsList.reduce((acc, curr) => acc + curr.quantity, 0);
+    showToast(language === 'fr' ? `${totalQty} article(s) ajoutés au panier !` : `${totalQty} item(s) added to cart!`);
+  };
+
   const buyNow = (item: Omit<CartItem, 'quantity'>, quantity = 1) => {
     const colorKey = item.selectedColor ? item.selectedColor.trim() : '';
     const sizeKey = item.selectedSize ? item.selectedSize.trim() : '';
@@ -107,7 +156,27 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       quantity,
     };
 
-    setDirectCheckoutItem(directItem);
+    setDirectCheckoutItemState(directItem);
+    setDirectCheckoutItems([directItem]);
+    setIsCartOpen(false);
+    setIsCheckoutOpen(true);
+  };
+
+  const buyNowMultiple = (itemsList: Array<{ item: Omit<CartItem, 'quantity'>; quantity: number }>) => {
+    if (!itemsList || itemsList.length === 0) return;
+    const directList: CartItem[] = itemsList.map(({ item, quantity }) => {
+      const colorKey = item.selectedColor ? item.selectedColor.trim() : '';
+      const sizeKey = item.selectedSize ? item.selectedSize.trim() : '';
+      const compositeId = `${item.id}::${colorKey}::${sizeKey}::${Date.now()}::${Math.random().toString(36).substring(2, 6)}`;
+      return {
+        ...item,
+        cartItemId: compositeId,
+        quantity,
+      };
+    });
+
+    setDirectCheckoutItemState(directList[0]);
+    setDirectCheckoutItems(directList);
     setIsCartOpen(false);
     setIsCheckoutOpen(true);
   };
@@ -142,9 +211,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         items,
         addItem,
+        addMultipleItems,
         buyNow,
+        buyNowMultiple,
         directCheckoutItem,
         setDirectCheckoutItem,
+        directCheckoutItems,
+        setDirectCheckoutItems,
         removeItem,
         updateQuantity,
         clearCart,

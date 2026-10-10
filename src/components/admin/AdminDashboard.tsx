@@ -225,7 +225,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, onNaviga
                   <div className="text-slate-400 text-[11px] mt-0.5 flex items-center gap-2">
                     <span>{formatDoualaDateTime(order.createdAt)}</span>
                     <span>•</span>
-                    <span>{order.cityAndNeighborhood} ({order.deliveryLocation})</span>
+                    <span>{order.deliveryLocation}</span>
                   </div>
                 </div>
 

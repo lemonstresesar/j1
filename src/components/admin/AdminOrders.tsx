@@ -107,8 +107,8 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
       const matchName = `${order.clientFirstName} ${order.clientLastName}`.toLowerCase().includes(term);
       const matchPhone = order.whatsappNumber.includes(term) || order.callNumber.includes(term);
       const matchLocation =
-        order.cityAndNeighborhood.toLowerCase().includes(term) ||
-        order.deliveryLocation.toLowerCase().includes(term);
+        order.deliveryLocation.toLowerCase().includes(term) ||
+        (order.cityAndNeighborhood ? order.cityAndNeighborhood.toLowerCase().includes(term) : false);
       const matchRef = order.id.toLowerCase().includes(term);
       if (!matchName && !matchPhone && !matchLocation && !matchRef) return false;
     }
@@ -428,16 +428,9 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
                     <div className="pt-1 space-y-1">
                       <div>
                         <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">
-                          Quartier & Ville
+                          Lieu de livraison
                         </span>
-                        <span className="text-slate-800 font-semibold">{order.cityAndNeighborhood}</span>
-                      </div>
-
-                      <div>
-                        <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">
-                          Lieu exact de livraison
-                        </span>
-                        <span className="text-slate-700 font-medium block">{order.deliveryLocation}</span>
+                        <span className="text-slate-800 font-semibold block">{order.deliveryLocation}</span>
                         <span className="text-slate-500 block text-[11px] pt-0.5">
                           Frais de zone : {order.deliveryPrice}
                         </span>

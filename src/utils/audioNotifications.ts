@@ -130,7 +130,7 @@ export function showOrderPushNotification(order: Order): void {
     const clientName = `${order.clientFirstName} ${order.clientLastName}`;
     const amount = formatFCFA(order.total);
     const title = `🔔 Nouvelle commande #${ref} !`;
-    const body = `${clientName} • ${amount} (${order.items.length} article${order.items.length > 1 ? 's' : ''})\nLieu : ${order.cityAndNeighborhood}`;
+    const body = `${clientName} • ${amount} (${order.items.length} article${order.items.length > 1 ? 's' : ''})\nLieu : ${order.deliveryLocation}`;
 
     const notif = new Notification(title, {
       body,

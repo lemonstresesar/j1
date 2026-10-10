@@ -83,7 +83,7 @@ export interface Order {
   clientFirstName: string;
   whatsappNumber: string;
   callNumber: string;
-  cityAndNeighborhood: string;
+  cityAndNeighborhood?: string;
   deliveryLocation: string;
   deliveryPrice: string; // e.g. "1 500 FCFA" or "à confirmer"
   items: OrderItem[];
