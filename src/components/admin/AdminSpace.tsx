@@ -26,6 +26,7 @@ import {
   subscribeToAuth,
   logoutAdmin,
   isAdminSessionActive,
+  ensureAdminAuthenticated,
 } from '../../services/authService';
 import {
   subscribeToProducts,
@@ -34,7 +35,7 @@ import {
   subscribeToOrders,
   subscribeToSettings,
 } from '../../services/storeService';
-import { playNewOrderSound, sendBrowserNotification } from '../../utils/notificationSound';
+import { playNewOrderSound, sendBrowserNotification, unlockAudioContext } from '../../utils/notificationSound';
 import { formatFCFA } from '../../utils/formatters';
 import { AdminLogin } from './AdminLogin';
 import { AdminDashboard } from './AdminDashboard';
@@ -89,6 +90,14 @@ export const AdminSpace: React.FC<AdminSpaceProps> = ({ onNavigateClient }) => {
     });
     return () => unsubAuth();
   }, []);
+
+  // Ensure Firebase Auth session is active and unlock AudioContext for real-time order alerts
+  useEffect(() => {
+    if (isAdminLoggedIn) {
+      ensureAdminAuthenticated();
+      unlockAudioContext();
+    }
+  }, [isAdminLoggedIn]);
 
   // Idle timer for automatic logout
   useEffect(() => {

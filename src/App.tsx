@@ -14,6 +14,8 @@ import {
   subscribeToDeliveryZones,
   subscribeToSettings,
   seedInitialStoreIfEmpty,
+  getDeletedProductIds,
+  getDeletedPackIds,
 } from './services/storeService';
 import { testConnection } from './firebase/config';
 import { INITIAL_SETTINGS } from './services/initialData';
@@ -49,7 +51,15 @@ function StoreApp() {
       const cached = localStorage.getItem('fhh_cached_products');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const deletedIds = getDeletedProductIds();
+          return parsed.filter(
+            (p: Product) =>
+              p.id !== '1' &&
+              !String(p.name || '').toLowerCase().includes('trousse') &&
+              !deletedIds.has(p.id)
+          );
+        }
       }
     } catch {}
     return [];
@@ -60,7 +70,10 @@ function StoreApp() {
       const cached = localStorage.getItem('fhh_cached_packs');
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const deletedIds = getDeletedPackIds();
+          return parsed.filter((p: Pack) => !deletedIds.has(p.id));
+        }
       }
     } catch {}
     return [];
@@ -141,6 +154,11 @@ function StoreApp() {
       if (found) {
         setSelectedProduct(found);
         setSelectedPack(null);
+      } else if (!isLoadingCatalog) {
+        // Product no longer exists in catalog
+        setSelectedProduct(null);
+        window.history.replaceState({}, '', '/');
+        setCurrentPath('/');
       }
     } else {
       const matchPack = currentPath.match(/^\/pack\/([a-zA-Z0-9_-]+)/);
@@ -150,10 +168,15 @@ function StoreApp() {
         if (found) {
           setSelectedPack(found);
           setSelectedProduct(null);
+        } else if (!isLoadingCatalog) {
+          // Pack no longer exists in catalog
+          setSelectedPack(null);
+          window.history.replaceState({}, '', '/');
+          setCurrentPath('/');
         }
       }
     }
-  }, [currentPath, products, packs]);
+  }, [currentPath, products, packs, isLoadingCatalog]);
 
   const navigate = (path: string) => {
     // SECURITY GATE: Redirect unauthorized direct attempts to access /admin

@@ -2,6 +2,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInAnonymously,
   GoogleAuthProvider,
   signOut,
   onAuthStateChanged,
@@ -252,6 +253,15 @@ export async function loginWithJessicaCredentials(nameInput: string, codeInput: 
     }
   }
 
+  if (!user) {
+    try {
+      const anonCred = await signInAnonymously(auth);
+      user = anonCred.user;
+    } catch {
+      // Fallback object
+    }
+  }
+
   const activeUser = (user || {
     uid: 'admin_jessica',
     email: internalEmail,
@@ -259,6 +269,33 @@ export async function loginWithJessicaCredentials(nameInput: string, codeInput: 
   }) as unknown as User;
 
   return activeUser;
+}
+
+/**
+ * Ensures admin session maintains active Firebase Auth token on page refresh
+ */
+export async function ensureAdminAuthenticated(): Promise<User | null> {
+  if (!isAdminSessionActive()) return null;
+  if (auth.currentUser) return auth.currentUser;
+
+  const internalEmail = 'jessica@forhimandher.app';
+  const internalPassword = 'jessica_admin_secure_jtm_2026!';
+  try {
+    const cred = await signInWithEmailAndPassword(auth, internalEmail, internalPassword);
+    return cred.user;
+  } catch (err: any) {
+    if (err?.code === 'auth/user-not-found' || err?.code === 'auth/invalid-credential') {
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, internalEmail, internalPassword);
+        return cred.user;
+      } catch {}
+    }
+    try {
+      const anon = await signInAnonymously(auth);
+      return anon.user;
+    } catch {}
+  }
+  return auth.currentUser;
 }
 
 export async function registerFirstAdmin(username: string, password: string): Promise<User> {

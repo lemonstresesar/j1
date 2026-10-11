@@ -83,11 +83,16 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
   };
 
   const handleAddColor = (colToAdd?: string) => {
-    const col = (colToAdd || colorInput).trim();
-    if (!col) return;
-    if (!availableColors.includes(col)) {
-      setAvailableColors((prev) => [...prev, col]);
-    }
+    const raw = (colToAdd || colorInput).trim();
+    if (!raw) return;
+    const parts = raw.split(/[,;]/).map((c) => c.trim()).filter(Boolean);
+    setAvailableColors((prev) => {
+      const next = [...prev];
+      for (const p of parts) {
+        if (!next.includes(p)) next.push(p);
+      }
+      return next;
+    });
     setColorInput('');
   };
 
@@ -96,11 +101,16 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
   };
 
   const handleAddSize = (szToAdd?: string) => {
-    const sz = (szToAdd || sizeInput).trim();
-    if (!sz) return;
-    if (!availableSizes.includes(sz)) {
-      setAvailableSizes((prev) => [...prev, sz]);
-    }
+    const raw = (szToAdd || sizeInput).trim();
+    if (!raw) return;
+    const parts = raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+    setAvailableSizes((prev) => {
+      const next = [...prev];
+      for (const p of parts) {
+        if (!next.includes(p)) next.push(p);
+      }
+      return next;
+    });
     setSizeInput('');
   };
 
@@ -113,7 +123,7 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
     if (!files || files.length === 0) return;
 
     if (photos.length + files.length > 3) {
-      alert('Vous pouvez ajouter un maximum de 3 photos par produit.');
+      setFormError('Vous pouvez ajouter un maximum de 3 photos par produit.');
       return;
     }
 
@@ -122,14 +132,14 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
       const compressedList: string[] = [];
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        // Compresses image to max 800px browser-side to keep under document limit
-        const compressedBase64 = await compressImageFile(file, 800, 0.75);
+        // Compresses image to max 640px to strictly respect document size limit
+        const compressedBase64 = await compressImageFile(file, 640, 0.7);
         compressedList.push(compressedBase64);
       }
       setPhotos((prev) => [...prev, ...compressedList].slice(0, 3));
     } catch (err) {
       console.error('Image compression error:', err);
-      alert('Erreur lors du traitement de la photo.');
+      setFormError('Erreur lors du traitement de la photo.');
     } finally {
       setIsCompressing(false);
     }
@@ -160,6 +170,25 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
 
     setIsSaving(true);
     try {
+      // Auto-include any text remaining in colorInput or sizeInput
+      const finalColors = [...availableColors];
+      if (colorInput.trim()) {
+        const parts = colorInput.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (!finalColors.includes(p)) finalColors.push(p);
+        }
+      }
+      const finalSizes = [...availableSizes];
+      if (sizeInput.trim()) {
+        const parts = sizeInput.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+        for (const p of parts) {
+          if (!finalSizes.includes(p)) finalSizes.push(p);
+        }
+      }
+
+      const hasColors = hasMultipleColors && finalColors.length > 0;
+      const hasSizes = hasMultipleSizes && finalSizes.length > 0;
+
       const rawPayload = {
         name: name.trim(),
         category,
@@ -168,10 +197,10 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
         price: Number(price),
         photos,
         isHidden,
-        hasMultipleColors: Boolean(hasMultipleColors && availableColors.length > 0),
-        availableColors: hasMultipleColors && availableColors.length > 0 ? availableColors : [],
-        hasMultipleSizes: Boolean(hasMultipleSizes && availableSizes.length > 0),
-        availableSizes: hasMultipleSizes && availableSizes.length > 0 ? availableSizes : [],
+        hasMultipleColors: Boolean(hasColors),
+        availableColors: hasColors ? finalColors : [],
+        hasMultipleSizes: Boolean(hasSizes),
+        availableSizes: hasSizes ? finalSizes : [],
         ...(discountPrice !== '' && Number(discountPrice) > 0 ? { discountPrice: Number(discountPrice) } : {}),
       };
       const payload = cleanFirestorePayload(rawPayload);
@@ -207,19 +236,31 @@ export const AdminProducts: React.FC<AdminProductsProps> = ({ products }) => {
     if (!productToDelete) return;
     const targetId = productToDelete.id;
 
-    // 1. Instantly close modal (0ms latency for user)
-    setProductToDelete(null);
-
-    // 2. Instantly remove product from UI list
-    setOptimisticDeletedIds((prev) => [...prev, targetId]);
-
-    // 3. Permanently delete from Google Cloud Firestore database
+    setIsDeleting(true);
     try {
+      // 1. Permanently delete from Google Cloud Firestore database
       await deleteProduct(targetId);
+
+      // 2. Clean from local cache so it never returns on refresh
+      try {
+        const cached = localStorage.getItem('fhh_cached_products');
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            const filtered = list.filter((item: any) => item.id !== targetId);
+            localStorage.setItem('fhh_cached_products', JSON.stringify(filtered));
+          }
+        }
+      } catch {}
+
+      // 3. Update optimistic removed state and close modal
+      setOptimisticDeletedIds((prev) => [...prev, targetId]);
+      setProductToDelete(null);
     } catch (err) {
       console.error('Error permanently deleting product:', err);
-      // Rollback on network failure
-      setOptimisticDeletedIds((prev) => prev.filter((id) => id !== targetId));
+      alert('Erreur lors de la suppression du produit dans la base de données. Veuillez réessayer.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 

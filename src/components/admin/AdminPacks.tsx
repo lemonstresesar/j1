@@ -193,18 +193,30 @@ export const AdminPacks: React.FC<AdminPacksProps> = ({ packs, products }) => {
     if (!packToDelete) return;
     const targetId = packToDelete.id;
 
-    // 1. Instantly close modal (0ms latency)
-    setPackToDelete(null);
-
-    // 2. Instantly remove from screen
-    setOptimisticDeletedIds((prev) => [...prev, targetId]);
-
-    // 3. Permanently delete from Google Cloud Firestore
+    setIsDeleting(true);
     try {
+      // 1. Permanently delete from Google Cloud Firestore
       await deletePack(targetId);
+
+      // 2. Clean from local cache so it never returns on refresh
+      try {
+        const cached = localStorage.getItem('fhh_cached_packs');
+        if (cached) {
+          const list = JSON.parse(cached);
+          if (Array.isArray(list)) {
+            const filtered = list.filter((item: any) => item.id !== targetId);
+            localStorage.setItem('fhh_cached_packs', JSON.stringify(filtered));
+          }
+        }
+      } catch {}
+
+      // 3. Instantly remove from screen and close modal
+      setOptimisticDeletedIds((prev) => [...prev, targetId]);
+      setPackToDelete(null);
     } catch (err) {
       console.error('Error permanently deleting pack:', err);
-      setOptimisticDeletedIds((prev) => prev.filter((id) => id !== targetId));
+    } finally {
+      setIsDeleting(false);
     }
   };
 

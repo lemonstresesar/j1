@@ -9,6 +9,29 @@ import { isAdminSessionActive } from '../services/authService';
 
 let audioCtx: AudioContext | null = null;
 
+export function unlockAudioContext(): void {
+  try {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        audioCtx = new AudioContextClass();
+      }
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume().catch(() => {});
+    }
+  } catch {}
+}
+
+if (typeof window !== 'undefined') {
+  // Automatically unlock Web Audio on first user interaction so incoming chimes never fail
+  const unlockEvents = ['click', 'touchstart', 'keydown'];
+  const handleInteraction = () => {
+    unlockAudioContext();
+  };
+  unlockEvents.forEach((evt) => window.addEventListener(evt, handleInteraction, { passive: true }));
+}
+
 function getAudioContext(): AudioContext | null {
   try {
     if (!audioCtx) {
@@ -18,7 +41,7 @@ function getAudioContext(): AudioContext | null {
       }
     }
     if (audioCtx && audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
     return audioCtx;
   } catch {
@@ -40,6 +63,10 @@ export function playNewOrderSound() {
     const ctx = getAudioContext();
     if (!ctx) return;
 
+    if (ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+
     const now = ctx.currentTime;
 
     // 1st Tone (D5 - 587.33 Hz)
@@ -49,7 +76,7 @@ export function playNewOrderSound() {
     osc1.type = 'sine';
     osc1.frequency.setValueAtTime(587.33, now);
     gain1.gain.setValueAtTime(0, now);
-    gain1.gain.linearRampToValueAtTime(0.35, now + 0.04);
+    gain1.gain.linearRampToValueAtTime(0.4, now + 0.04);
     gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
 
     osc1.connect(gain1);
@@ -65,7 +92,7 @@ export function playNewOrderSound() {
     osc2.type = 'triangle';
     osc2.frequency.setValueAtTime(880, now + 0.15);
     gain2.gain.setValueAtTime(0, now + 0.15);
-    gain2.gain.linearRampToValueAtTime(0.4, now + 0.18);
+    gain2.gain.linearRampToValueAtTime(0.45, now + 0.18);
     gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
 
     osc2.connect(gain2);
