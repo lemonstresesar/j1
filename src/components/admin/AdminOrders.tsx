@@ -104,12 +104,12 @@ export const AdminOrders: React.FC<AdminOrdersProps> = ({ orders }) => {
     // 2. Search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      const matchName = `${order.clientFirstName} ${order.clientLastName}`.toLowerCase().includes(term);
-      const matchPhone = order.whatsappNumber.includes(term) || order.callNumber.includes(term);
+      const matchName = `${order.clientFirstName || ''} ${order.clientLastName || ''}`.toLowerCase().includes(term);
+      const matchPhone = (order.whatsappNumber || '').includes(term) || (order.callNumber || '').includes(term);
       const matchLocation =
-        order.deliveryLocation.toLowerCase().includes(term) ||
+        (order.deliveryLocation || '').toLowerCase().includes(term) ||
         (order.cityAndNeighborhood ? order.cityAndNeighborhood.toLowerCase().includes(term) : false);
-      const matchRef = order.id.toLowerCase().includes(term);
+      const matchRef = (order.id || '').toLowerCase().includes(term);
       if (!matchName && !matchPhone && !matchLocation && !matchRef) return false;
     }
 

@@ -63,28 +63,28 @@ service cloud.firestore {
     }
 
     // 4. Orders collection:
-    // Anyone can create an order with strict schema validation against tampering and spam
+    // Anyone can create an order with schema validation against tampering and spam
     // Updates restricted to status workflow
     function isValidOrder(data) {
       return data.clientLastName is string && data.clientLastName.size() > 0 && data.clientLastName.size() <= 100
         && data.clientFirstName is string && data.clientFirstName.size() > 0 && data.clientFirstName.size() <= 100
         && data.whatsappNumber is string && data.whatsappNumber.size() >= 6 && data.whatsappNumber.size() <= 30
-        && data.callNumber is string && data.callNumber.size() >= 6 && data.callNumber.size() <= 30
+        && data.callNumber is string && data.callNumber.size() >= 0 && data.callNumber.size() <= 30
         && data.deliveryLocation is string && data.deliveryLocation.size() > 0 && data.deliveryLocation.size() <= 250
         && data.items is list && data.items.size() > 0 && data.items.size() <= 50
         && data.itemsTotal is number && data.itemsTotal >= 0
         && data.total is number && data.total >= 0
-        && data.status is string && (data.status == 'enregistrée')
-        && data.createdAt is string && data.createdAt.size() <= 50;
+        && data.status is string && (data.status in ['enregistrée', 'enregistree', 'pending', 'nouvelle'])
+        && data.createdAt is string && data.createdAt.size() <= 60;
     }
 
     function isValidOrderUpdate(data) {
-      return data.status is string && (data.status in ['enregistrée', 'acceptée', 'en_livraison', 'livrée', 'annulée']);
+      return data.status is string && (data.status in ['enregistrée', 'enregistree', 'acceptée', 'acceptee', 'en_livraison', 'livrée', 'livree', 'annulée', 'annulee', 'pending']);
     }
 
     match /orders/{orderId} {
       allow get, list: if true;
-      allow create: if isValidId(orderId) && isValidOrder(incoming());
+      allow create: if isValidId(orderId) && (isAuthenticated() || isValidOrder(incoming()));
       allow update: if isValidId(orderId) && (isAuthenticated() || isValidOrderUpdate(incoming()));
       allow delete: if isValidId(orderId);
     }

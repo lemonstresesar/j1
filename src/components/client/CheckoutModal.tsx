@@ -49,6 +49,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
+  const [sameAsWhatsapp, setSameAsWhatsapp] = useState(true);
   const [callNumber, setCallNumber] = useState('');
   const [selectedZoneId, setSelectedZoneId] = useState<string>('');
   const [customDestination, setCustomDestination] = useState('');
@@ -91,7 +92,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       errs.whatsappNumber = t.errPhoneInvalid;
     }
 
-    const cleanCall = callNumber.replace(/\D/g, '');
+    const effectiveCallNumber = sameAsWhatsapp ? whatsappNumber : callNumber;
+    const cleanCall = effectiveCallNumber.replace(/\D/g, '');
     if (!cleanCall || cleanCall.length < 8) {
       errs.callNumber = t.errPhoneInvalid;
     }
@@ -124,11 +126,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         ? (language === 'fr' ? 'À confirmer sur WhatsApp' : 'To be confirmed on WhatsApp')
         : formatFCFA(selectedZone!.price);
 
+      const effectiveCallNumber = sameAsWhatsapp ? whatsappNumber : (callNumber || whatsappNumber);
+
       const orderPayload = {
         clientLastName: sanitizeInput(lastName, 100),
         clientFirstName: sanitizeInput(firstName, 100),
         whatsappNumber: sanitizeInput(whatsappNumber, 30),
-        callNumber: sanitizeInput(callNumber, 30),
+        callNumber: sanitizeInput(effectiveCallNumber, 30),
         cityAndNeighborhood: sanitizeInput(deliveryLocationLabel, 200),
         deliveryLocation: sanitizeInput(deliveryLocationLabel, 200),
         deliveryPrice: deliveryPriceLabel,
@@ -394,7 +398,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
 
             {/* Phone numbers */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
                   {t.whatsappNumber} *
@@ -413,23 +417,41 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 {errors.whatsappNumber && <p className="text-[10px] text-rose-500 mt-0.5">{errors.whatsappNumber}</p>}
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {t.callNumber} *
-                </label>
+              {/* Checkbox: use same number for direct calls */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer select-none">
                 <input
-                  type="tel"
-                  required
-                  value={callNumber}
-                  onChange={(e) => setCallNumber(e.target.value)}
-                  placeholder="6 77 00 11 22"
-                  className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm ${
-                    errors.callNumber ? 'border-rose-400 bg-rose-50/50' : 'border-slate-200 focus:border-[#1E63B5]'
-                  } outline-none`}
+                  type="checkbox"
+                  checked={sameAsWhatsapp}
+                  onChange={(e) => setSameAsWhatsapp(e.target.checked)}
+                  className="rounded border-slate-300 text-[#1E63B5] focus:ring-[#1E63B5] w-4 h-4 cursor-pointer"
                 />
-                <span className="text-[10px] text-slate-400">{t.callHelper}</span>
-                {errors.callNumber && <p className="text-[10px] text-rose-500 mt-0.5">{errors.callNumber}</p>}
-              </div>
+                <span className="font-medium text-slate-600">
+                  {language === 'fr'
+                    ? 'Utiliser ce même numéro pour les appels direct'
+                    : 'Use this same number for direct phone calls'}
+                </span>
+              </label>
+
+              {/* Distinct call number field (only if unselected) */}
+              {!sameAsWhatsapp && (
+                <div className="animate-in fade-in">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {t.callNumber} *
+                  </label>
+                  <input
+                    type="tel"
+                    required={!sameAsWhatsapp}
+                    value={callNumber}
+                    onChange={(e) => setCallNumber(e.target.value)}
+                    placeholder="6 77 00 11 22"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border text-xs sm:text-sm ${
+                      errors.callNumber ? 'border-rose-400 bg-rose-50/50' : 'border-slate-200 focus:border-[#1E63B5]'
+                    } outline-none`}
+                  />
+                  <span className="text-[10px] text-slate-400">{t.callHelper}</span>
+                  {errors.callNumber && <p className="text-[10px] text-rose-500 mt-0.5">{errors.callNumber}</p>}
+                </div>
+              )}
             </div>
 
 
